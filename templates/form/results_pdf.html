@@ -1,45 +1,12 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>Resultados de Evaluación</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            margin: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .results-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .results-table th, .results-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .results-table th {
-            background-color: #f2f2f2;
-        }
-        .summary {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-        }
-        .level {
-            font-weight: bold;
-        }
-        .level-description {
-            margin-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/pdf.css' %}">
+    <link href="{% static 'css/font.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="header">
@@ -77,10 +44,10 @@
     </div>
     
     <div class="level-description">
-        <h3>Descripción de Niveles</h3>
-        <p><strong>A1-A2:</strong> Nivel básico</p>
-        <p><strong>B1-B2:</strong> Nivel intermedio</p>
-        <p><strong>C1-C2:</strong> Nivel avanzado</p>
-    </div>
+    <h3>Descripción de Niveles</h3>
+    <p><strong>A1-A2:</strong> Nivel inicial - El usuario posee conocimientos básicos y limitados, con capacidad para manejar situaciones cotidianas simples.</p>
+    <p><strong>B1-B2:</strong> Nivel intermedio - El usuario tiene un dominio más amplio y fluido del tema, pudiendo comprender y participar en conversaciones más complejas.</p>
+    <p><strong>C1-C2:</strong> Nivel experto - El usuario tiene un dominio completo del tema, con habilidades para analizar y resolver problemas complejos de manera eficiente.</p>
+</div>
 </body>
 </html>

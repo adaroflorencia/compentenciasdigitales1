@@ -45,11 +45,12 @@
         </div>
 
         <!-- Botón para generar el PDF -->
-        <div>
-            <a href="{% url 'results' %}?format=pdf" class="btn btn-blue mt-3">
+        <div class="d-flex justify-content-center mt-5">
+            <a href="{% url 'results' %}?format=pdf" class="btn btn-blue">
                 <i class="fas fa-file-pdf"></i> Descargar como PDF
             </a>
         </div>
+
     </section>
     <section>
         <h1 class="heading-3 m-4 text-start">Recomendaciones Personalizadas</h1>
