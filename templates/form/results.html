@@ -6,7 +6,7 @@
 
         <div class="results-section">
             <div class="container">
-                <div class="row justify-content-center">
+                <div class="row justify-content-center py-4">
                     <div class="col-md-10 col-lg-5 col-xl-6 text-center">
                         <div class="badge-container">
                             <div class="level-{{ total_level|lower }}">
@@ -17,8 +17,8 @@
                         </div>
                     </div>
 
-                    <div class="col-md-10 col-lg-7 col-xl-6 px-2">
-                        <h2 class="heading-3 m-4 text-start">Tu nivel de Competencias Digitales</h2>
+                    <div class="col-md-10 col-lg-7 col-xl-6 px-2 ">
+                        <h2 class="heading-3 m-4 text-center">Tu nivel de Competencias Digitales</h2>
                         {% for topic_name, topic_data in results.items %}
                             <div class="topic-container m-4">
                                 <div class="progress-linear progress-secondary level-{{ topic_data.level|lower }}">
