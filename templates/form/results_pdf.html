@@ -11,7 +11,15 @@
 <body>
     <div class="header">
         <h1>Informe de Resultados de Evaluación</h1>
-        <p>Rol: {{ user_role }}</p>
+        <p>Rol:
+        {% if user_role == "no_docente" %}
+            No docente
+        {% elif user_role == "docente" %}
+            Docente
+        {% elif user_role == "estudiante" %}
+            Estudiante
+        {% endif %}
+    </p>
         <p>Fecha: {% now "d/m/Y" %}</p>
     </div>
     
@@ -19,10 +27,10 @@
     <table class="results-table">
         <thead>
             <tr>
+            <tr>
                 <th>Tópico</th>
                 <th>Puntaje (%)</th>
                 <th>Nivel</th>
-                <th>Preguntas</th>
             </tr>
         </thead>
         <tbody>
@@ -31,7 +39,6 @@
                 <td>{{ topic }}</td>
                 <td>{{ data.score }}%</td>
                 <td class="level">{{ data.level }}</td>
-                <td>{{ data.answered_questions }}/{{ data.total_questions }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -48,6 +55,6 @@
     <p><strong>A1-A2:</strong> Nivel inicial - El usuario posee conocimientos básicos y limitados, con capacidad para manejar situaciones cotidianas simples.</p>
     <p><strong>B1-B2:</strong> Nivel intermedio - El usuario tiene un dominio más amplio y fluido del tema, pudiendo comprender y participar en conversaciones más complejas.</p>
     <p><strong>C1-C2:</strong> Nivel experto - El usuario tiene un dominio completo del tema, con habilidades para analizar y resolver problemas complejos de manera eficiente.</p>
-</div>
+    </div>
 </body>
 </html>
