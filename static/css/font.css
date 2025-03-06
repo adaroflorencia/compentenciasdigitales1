@@ -9592,6 +9592,18 @@
 	content: "\e0db";
 }
 
+.fl-bigmug-line-earth206:before {
+    content: "\e04a";
+}
+
+.fl-bigmug-line-lightbulb63:before {
+    content: "\e10f";
+}
+
+.fl-bigmug-line-compass47:before {
+    content: "\e03d";
+}
+
 @font-face {
 	font-family: 'Material Icons';
 	font-style: normal;
