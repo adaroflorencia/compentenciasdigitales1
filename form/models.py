@@ -1,5 +1,12 @@
 from django.db import models
-from accounts.models import Role, CustomUser
+from django.contrib.auth.models import User
+
+class Role(models.Model):
+
+    name = models.CharField(max_length=20, unique=True)
+
+    def __str__(self):
+        return self.name
 
 class Topic(models.Model):
     name = models.CharField(max_length=255)
@@ -23,20 +30,17 @@ class Option(models.Model):
     def __str__(self):
         return self.text
 
-class Answer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    option = models.ForeignKey(Option, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.user.email} - {self.question.text}"
-
 class TopicResult(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    session_id = models.CharField(max_length=32)
     score = models.FloatField(default=0)
     level = models.CharField(max_length=10, default='A1')
     total_questions = models.IntegerField(default=0)
 
+    class Meta:
+        unique_together = ('topic', 'session_id')
+
     def __str__(self):
-        return f"{self.topic.name} - {self.user.email}"
+        if self.session_id:
+            return f"{self.topic.name} - Session {self.session_id[:8]}"
+        return f"{self.topic.name}"

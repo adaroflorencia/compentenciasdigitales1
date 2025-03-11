@@ -14,23 +14,6 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <!-- Navbar links -->
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="text-uppercase nav-link dark-link ms-2" href="{% url 'logout' %}" aria-current="page">Logout</a>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class=" text-uppercase nav-link dark-link ms-2" href="{% url 'login' %}">Iniciar Sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="text-uppercase nav-link dark-link ms-2" href="{% url 'signup' %}">Regístrate</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
         </div>
     </nav>
 </header>

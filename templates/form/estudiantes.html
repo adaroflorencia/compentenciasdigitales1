@@ -10,14 +10,8 @@
             <p class="text-width-medium text-spacing-75 wow fadeInLeft" data-wow-delay=".1s">
                 Desarrolla tus habilidades digitales para transformar la educación y potenciar tu crecimiento profesional. <br> Tiempo estimado: 10 min.
             </p>
-              {% if user.is_authenticated %}
-                <a class="button button-secondary button-pipaluk text-decoration-none" href="{% url 'evaluate' %}">Empezar</a>
-              {% else %}
-                <p class="text-width-medium text-spacing-75 wow fadeInLeft" data-wow-delay=".1s">
-                    Para acceder a esta función, inicia sesión.
-                </p>
-            <a class="button button-secondary button-pipaluk text-decoration-none" href="{% url 'login' %}?next={% url 'estudiantes' %}">Iniciar sesión</a>
-            {% endif %}
+              <a class="button button-secondary button-pipaluk text-decoration-none"
+                       href="{% url 'evaluate' %}">Empezar</a>
             </div>
           </div>
         </div>
