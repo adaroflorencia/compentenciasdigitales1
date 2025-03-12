@@ -1,21 +1,24 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Role, Topic, Question, Option, TopicResult
+from .models import Role, Topic, Question, Option, TopicResult, Answer
 import uuid
 import logging
 from pdf_generator.views import generar_pdf
 
 
 def docente(request):
+    request.session.flush()
     request.session['role_id'] = 3
     return render(request, 'form/docentes.html', {'role_id': request.session.get('role_id')})
 
 
 def estudiante(request):
+    request.session.flush()
     request.session['role_id'] = 2
     return render(request, 'form/estudiantes.html', {'role_id': request.session.get('role_id')})
 
 
 def no_docentes(request):
+    request.session.flush()
     request.session['role_id'] = 4
     return render(request, 'form/no_docentes.html', {'role_id': request.session.get('role_id')})
 
@@ -38,7 +41,8 @@ def generate_form(request, role_id):
 
         # Crear un ID de sesión único si no existe
         if 'session_id' not in request.session:
-            request.session['session_id'] = str(uuid.uuid4())
+            uuid_str = str(uuid.uuid4()).replace('-', '')[:32]
+            request.session['session_id'] = uuid_str
 
         # Guardar preguntas en la sesión para evaluación
         request.session['all_questions'] = [q.id for q in questions]
@@ -48,15 +52,10 @@ def generate_form(request, role_id):
         request.session['question_scores'] = {}
         request.session.modified = True
 
-        context = {
-            'role_id': role_id,
-            'role': role,
-        }
-
         return redirect('evaluate', role_id=role.id)
 
     except Exception as e:
-        logging.error(f"Error generando formulario para el rol {role}: {e}")
+        logging.error(f"Error generando formulario para el rol {role_id}: {e}")
         return render(request, 'form/error.html', {'message': 'Error generando el formulario.'})
 
 
@@ -82,6 +81,12 @@ def evaluate(request, role_id):
     if 'question_scores' not in request.session:
         request.session['question_scores'] = {}
 
+    # Obtener el ID de sesión
+    session_id = request.session.get('session_id')
+    if not session_id:
+        request.session['session_id'] = str(uuid.uuid4())
+        session_id = request.session['session_id']
+
     # Obtener el índice de la pregunta actual
     current_question_index = request.session['current_question']
 
@@ -94,7 +99,7 @@ def evaluate(request, role_id):
     if 'next' in request.POST and current_question_index >= len(all_questions) - 1:
         if len(request.session['answers']) == len(all_questions):
             request.session['form_completed'] = True
-            return redirect('results', role=role_id)
+            return redirect('results')
         else:
             # Redirigir a la primera pregunta sin responder
             for i, q in enumerate(all_questions):
@@ -148,10 +153,23 @@ def evaluate(request, role_id):
                     old_score = question_scores.get(question_id, 0)
                     topic_scores[topic_name] = topic_scores.get(topic_name, 0) - old_score
 
+                    # Eliminar la respuesta anterior de la base de datos
+                    Answer.objects.filter(
+                        session_id=session_id,
+                        question_id=current_question.id
+                    ).delete()
+
                 # Guardar nueva respuesta y puntaje
                 answers[question_id] = selected_option
                 question_scores[question_id] = option.score
                 topic_scores[topic_name] = topic_scores.get(topic_name, 0) + option.score
+
+                # Guardar la respuesta en la base de datos (modelo Answer)
+                Answer.objects.create(
+                    session_id=session_id,
+                    question=current_question,
+                    option=option
+                )
 
                 # Actualizar sesión
                 request.session['answers'] = answers
@@ -163,7 +181,7 @@ def evaluate(request, role_id):
                     if len(answers) == len(all_questions):
                         request.session['form_completed'] = True
                         request.session.modified = True
-                        return redirect('results', role=role_id)
+                        return redirect('results')
                     else:
                         # Redirigir a la primera pregunta sin responder
                         for i, q in enumerate(all_questions):
@@ -208,10 +226,14 @@ def evaluate(request, role_id):
     return render(request, 'form/evaluate.html', context)
 
 
-def results(request, role):
+def results(request, role=None):
     try:
-        # Obtener el rol a partir del ID
-        role_id = role  # Renombramos para claridad
+        # Obtener el rol de la sesión si no viene como parámetro
+        role_id = role if role is not None else request.session.get('role_id')
+
+        if not role_id:
+            return redirect('index')  # Redirigir a página principal si no hay rol
+
         role_obj = get_object_or_404(Role, id=role_id)
 
         # Obtener el ID de sesión
@@ -220,7 +242,14 @@ def results(request, role):
         if not session_id:
             return redirect('generate_form', role_id=role_id)
 
-        # Obtener resultados por rol y sesión
+        # Verificar respuestas guardadas en la base de datos
+        answers_count = Answer.objects.filter(session_id=session_id).count()
+
+        # Obtener todas las preguntas para este rol
+        all_questions = Question.objects.filter(topic__role=role_obj)
+        total_questions = all_questions.count()
+
+        # Verificar si ya hay resultados guardados para esta sesión
         existing_results = TopicResult.objects.filter(session_id=session_id)
 
         if existing_results.exists():
@@ -245,92 +274,108 @@ def results(request, role):
             average_total = round((total_points / total_possible_points) * 100, 2) if total_possible_points > 0 else 0
 
         else:
-            # Verificar si el formulario está completo
-            if not request.session.get('form_completed'):
+            # Verificar si tenemos respuestas para calcular resultados
+            if answers_count == 0:
+                # No hay respuestas en la base de datos, redirigir a evaluación
                 return redirect('evaluate', role_id=role_id)
 
-            topic_scores = request.session.get('topic_scores', {})
-            answers = request.session.get('answers', {})
+            # Si hay respuestas pero no resultados guardados, calcular y guardar los resultados
+            # Obtener todas las respuestas para esta sesión
+            all_answers = Answer.objects.filter(session_id=session_id)
 
-            if not topic_scores or not answers:
-                return redirect('evaluate', role_id=role_id)
+            # Agrupar respuestas por tópico
+            answers_by_topic = {}
+            for answer in all_answers:
+                topic = answer.question.topic
+                if topic not in answers_by_topic:
+                    answers_by_topic[topic] = []
+                answers_by_topic[topic].append(answer)
 
-            # Calcular y guardar resultados
-            questions = Question.objects.filter(topic__role_id=role_id)
-            questions_by_topic = {}
+            # Calcular resultados por tópico
             final_results = {}
             total_points = 0
             total_possible_points = 0
 
-            # Agrupar preguntas por tópico
-            for question in questions:
-                if question.topic not in questions_by_topic:
-                    questions_by_topic[question.topic] = []
-                questions_by_topic[question.topic].append(question)
+            # Obtener todos los tópicos para este rol
+            topics = Topic.objects.filter(role=role_obj)
 
-            # Calcular resultados por tópico
-            for topic, questions_list in questions_by_topic.items():
-                if topic.name in topic_scores:
-                    total_questions = len(questions_list)
-                    max_points_possible = total_questions * 6
-                    topic_points = topic_scores[topic.name]
+            for topic in topics:
+                # Obtener todas las preguntas para este tópico
+                questions_in_topic = Question.objects.filter(topic=topic)
+                total_questions_in_topic = questions_in_topic.count()
 
-                    # Calcular porcentaje real
-                    score_percentage = (topic_points / max_points_possible) * 100 if max_points_possible > 0 else 0
+                # Obtener respuestas para este tópico
+                answers_in_topic = answers_by_topic.get(topic, [])
+                answered_questions_count = len(answers_in_topic)
 
-                    # Determinar nivel basado en el porcentaje
-                    level = determine_level(score_percentage)
+                # Calcular puntaje para este tópico
+                topic_points = sum(answer.option.score for answer in answers_in_topic)
+                max_points_possible = total_questions_in_topic * 6
 
-                    # Guardar en la base de datos usando session_id
-                    TopicResult.objects.create(
-                        topic=topic,
-                        session_id=session_id,
-                        score=round(score_percentage, 2),
-                        level=level,
-                        total_questions=total_questions
-                    )
+                # Calcular porcentaje de score
+                score_percentage = (topic_points / max_points_possible) * 100 if max_points_possible > 0 else 0
 
-                    final_results[topic.name] = {
-                        'score': round(score_percentage, 2),
-                        'total_questions': total_questions,
-                        'answered_questions': len([q.id for q in questions_list if str(q.id) in answers]),
-                        'level': level
-                    }
+                # Determinar nivel
+                level = determine_level(score_percentage)
 
-                    total_points += topic_points
-                    total_possible_points += max_points_possible
+                # Guardar resultado en la base de datos
+                TopicResult.objects.create(
+                    topic=topic,
+                    session_id=session_id,
+                    score=round(score_percentage, 2),
+                    level=level,
+                    total_questions=total_questions_in_topic
+                )
+
+                final_results[topic.name] = {
+                    'score': round(score_percentage, 2),
+                    'total_questions': total_questions_in_topic,
+                    'answered_questions': answered_questions_count,
+                    'level': level
+                }
+
+                total_points += topic_points
+                total_possible_points += max_points_possible
 
             # Calcular promedio total
             average_total = round((total_points / total_possible_points) * 100, 2) if total_possible_points > 0 else 0
 
-            # Limpiar la sesión después de guardar resultados
-            session_keys = [
-                'answers', 'current_question', 'topic_scores',
-                'question_scores', 'all_questions', 'form_completed'
-            ]
-            for key in session_keys:
-                request.session.pop(key, None)
+            # Marcar que el formulario está completo en la sesión
+            request.session['form_completed'] = True
+            request.session.modified = True
 
+        # Determinar el nivel total
         total_level = determine_level(average_total)
+
+        # Guardar información importante en la sesión para referencias futuras
+        request.session['results_calculated'] = True
+        request.session['average_total'] = average_total
+        request.session['total_level'] = total_level
+        request.session.modified = True
 
         context = {
             'results': final_results,
             'total_score': average_total,
             'user_role': role_id,
             'total_level': total_level,
+            'answers_count': answers_count,
+            'total_questions': total_questions,
+            'role_name': role_obj.name
         }
 
         # Si se solicita formato PDF
         if request.GET.get('format') == 'pdf':
             return generar_pdf(request, 'form/results_pdf.html', context)
 
+
+
         return render(request, 'form/results.html', context)
 
     except Exception as e:
-        logging.error(f"Error procesando resultados para sesión {session_id}: {e}")
-        if 'session_id' in locals() and TopicResult.objects.filter(session_id=session_id).exists():
-            return redirect('results', role=role_id)
-        return redirect('evaluate', role_id=role_id)
+        logging.error(f"Error procesando resultados: {e}")
+        # Obtener el ID de rol de la sesión
+        role_id_from_session = request.session.get('role_id', 1)  # Valor por defecto si no existe
+        return redirect('evaluate', role_id=role_id_from_session)
 
 
 def determine_level(percentage):

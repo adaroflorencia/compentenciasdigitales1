@@ -23,6 +23,14 @@ class Question(models.Model):
     def __str__(self):
         return self.text
 
+class Answer(models.Model):
+    session_id = models.CharField(max_length=255)  # ID de sesión para relacionar respuestas
+    question = models.ForeignKey('Question', on_delete=models.CASCADE)
+    option = models.ForeignKey('Option', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Session: {self.session_id} - {self.question.text} - {self.option.text}"
+
 class Option(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(max_length=255)
