@@ -64,14 +64,13 @@ def evaluate(request, role_id):
     question_ids = request.session.get('all_questions', [])
     all_questions = Question.objects.filter(id__in=question_ids)
 
-    # Obtener el objeto rol correctamente por su ID
+    # Obtener el rol por su ID
     role = get_object_or_404(Role, id=role_id)
 
-    # Verificar si hay preguntas disponibles
     if not all_questions.exists():
         return redirect('generate_form', role_id=role_id)
 
-    # Inicializar variables de sesión si no existen
+    # Inicializar variables de sesión
     if 'answers' not in request.session:
         request.session['answers'] = {}
     if 'current_question' not in request.session:
@@ -253,7 +252,7 @@ def results(request, role=None):
         existing_results = TopicResult.objects.filter(session_id=session_id)
 
         if existing_results.exists():
-            # Resultados ya almacenados en la base de datos
+
             final_results = {}
             total_points = 0
             total_possible_points = 0
@@ -367,14 +366,12 @@ def results(request, role=None):
         if request.GET.get('format') == 'pdf':
             return generar_pdf(request, 'form/results_pdf.html', context)
 
-
-
         return render(request, 'form/results.html', context)
 
     except Exception as e:
         logging.error(f"Error procesando resultados: {e}")
         # Obtener el ID de rol de la sesión
-        role_id_from_session = request.session.get('role_id', 1)  # Valor por defecto si no existe
+        role_id_from_session = request.session.get('role_id', 1)
         return redirect('evaluate', role_id=role_id_from_session)
 
 

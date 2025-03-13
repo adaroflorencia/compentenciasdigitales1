@@ -11,14 +11,6 @@
 <body>
     <div class="header">
         <h1>Informe de Resultados de Evaluación</h1>
-        <p>Rol:
-        {% if user_role == "no_docente" %}
-            No docente
-        {% elif user_role == "docente" %}
-            Docente
-        {% elif user_role == "estudiante" %}
-            Estudiante
-        {% endif %}
     </p>
         <p>Fecha: {% now "d/m/Y" %}</p>
     </div>

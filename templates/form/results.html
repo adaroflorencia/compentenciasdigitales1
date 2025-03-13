@@ -52,17 +52,5 @@
         </div>
 
     </section>
-    <section>
-        <h1 class="heading-3 m-4 text-start">Recomendaciones Personalizadas</h1>
-
-        {% if recomendaciones %}
-            <ul>
-                {% for recomendacion in recomendaciones %}
-                    <li>{{ recomendacion }}</li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="m-4">No se encontraron recomendaciones para mostrar.</p>
-        {% endif %}
-    </section>
+    
 {% endblock %}
